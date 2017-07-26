@@ -1,4 +1,4 @@
-#Notebook problems
+# Notebook problems
 If there are problems like iopub limit exceeded, please set the limit manually using
 `jupyter notebook --NotebookApp.iopub_data_rate_limit=10000000`
 In the Jupyter Notebook docs, they show that the default is:
@@ -8,7 +8,8 @@ Default: 1000000
 (bytes/sec) Maximum rate at which messages can be sent on iopub before they are limited.
 `
 So, just set something that is higher than that to allow for the iopub limit to be exceeded. 
-#Installing MATLAB engine
+
+# Installing MATLAB engine
 This is a pain in the ass. The following might help for some. Did not help for me, except of course the last one, which is the official one. Do remember, if using conda and if sudo (root) does not use conda, and hence has a different version of python installed, use the proper path while setting up the manager for the jupyter notebook : 
 - `conda install gcc`
 - `libglut.so.3` problem solved: with `sudo apt-get install freeglut3`
@@ -24,10 +25,10 @@ which returned, say
 Append the following to the .bashrc file to change the LD_LIBRARY_PATH to make sure the correct path is searched. The following is an example. 
 `export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.23:$LD_LIBRARY_PATH"`
 
-#Using the MATLAB engine
+# Using the MATLAB engine
 Full on tower of babel problem. So, MATLAB and python use different default types for numbers. Python floats are converted to MATLAB doubles. So use floats when one expects MATLAB doubles and int where we want to convert it to int64. Thomas already has done the default ones in the code (which for some reason does not function on the mac for me) but one might have to look at the files to check the data type of the values that is taken by the program.
 
-#Using MATLAB
+# Using MATLAB
 You will need the following package(s):
 - `psychtoolbox-3`
 
@@ -41,7 +42,7 @@ An easy way to generate stimuli would be to use the psychopy toolbox but that is
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-Notes for me : 
+# Notes for me : 
 
 It makes sense to have a more systematic search of the hemisphere rather than having a random search as it is shown that at certain regions of the hemisphere, the values of the residual functions are seemingly concentrated on a small part of the hemisphere, so we do not want to lose it as such.
 
