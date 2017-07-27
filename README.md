@@ -46,4 +46,6 @@ An easy way to generate stimuli would be to use the psychopy toolbox but that is
 
 It makes sense to have a more systematic search of the hemisphere rather than having a random search as it is shown that at certain regions of the hemisphere, the values of the residual functions are seemingly concentrated on a small part of the hemisphere, so we do not want to lose it as such.
 
-There is something wrong with the calculatio of the translation direction, perhaps we can have a look at it in terms of the actual mathematical solving of the problem. Update : I found what was wrong, yay! I was using the wrong values of the sample velocity and the sample position
+There is something wrong with the calculatio of the translation direction, perhaps we can have a look at it in terms of the actual mathematical solving of the problem. Update : I found what was wrong, yay! I was using the wrong values of the sample velocity and the sample position.
+
+Okay, now we shall use the values of the optic flow generated artificially by me in order to test the robustness of the algorithm under question. It would also be nice if we could generate the optic flow values back from the values of the colour coded UCL images that we saw. From that, with the parallelized code, it should be enough for us to work on for the next few days. 
