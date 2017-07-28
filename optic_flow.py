@@ -94,4 +94,4 @@ def get_artificial_optic_flow(f,X,Y,T,Omega):
 
     for i in np.arange(0,X,1):
         for j in np.arange(0,Y,1):
-            O_field(i,j) = get_point_optic_flow(f,i,j,T,Omega)
+            O_field[i,j] = get_point_optic_flow(f,i,j,T,Omega)
