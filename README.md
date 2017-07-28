@@ -48,4 +48,8 @@ It makes sense to have a more systematic search of the hemisphere rather than ha
 
 There is something wrong with the calculatio of the translation direction, perhaps we can have a look at it in terms of the actual mathematical solving of the problem. Update : I found what was wrong, yay! I was using the wrong values of the sample velocity and the sample position.
 
-Okay, now we shall use the values of the optic flow generated artificially by me in order to test the robustness of the algorithm under question. It would also be nice if we could generate the optic flow values back from the values of the colour coded UCL images that we saw. From that, with the parallelized code, it should be enough for us to work on for the next few days. 
+Okay, now we shall use the values of the optic flow generated artificially by me in order to test the robustness of the algorithm under question. It would also be nice if we could generate the optic flow values back from the values of the colour coded UCL images that we saw. From that, with the parallelized code, it should be enough for us to work on for the next few days.
+
+So, there is some kind of stochasticity during the calculation of the subspace algorithm. Perhaps, we can look at some of the other ways to look at it? The 2012 paper needs to be looked at in a better way apparently. 
+
+Also, to be looked into - the use of either python pool architecture or into some form of Numba or PyCUDA that can be useful. 

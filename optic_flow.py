@@ -1,8 +1,7 @@
 import numpy as np
+from scipy import linalg
 from mt_cell import*
 from mstd_cell import *
-
-
 
 def optic_flow(stimulus):
     """
@@ -59,6 +58,8 @@ def optic_flow(stimulus):
     return v_x, v_y
 
 ## This one is used to generate some random optic flows for getting the mmonocular ego motion extraction to work. 
+## Will write a nice code bank about it later on
+
 def calculate_A(f,x,y):
     A = np.array([[-f,0,x],[0,-f,y]])
     assert A.shape == (2,3), "Wrong shape of A(x,y) matrix, should be {} but is {}".format((2,3),A.shape)
@@ -81,17 +82,23 @@ def get_point_optic_flow(f,x,y,T,Omega):
     translation = (1/Z)*np.dot(A_xy,T)
     rotation = np.dot(B_xy,Omega)
 
-    v_xy = translation + rotation 
+    v_xy = translation + rotation
+    v_xy = v_xy/linalg.norm(v_xy) 
     assert v_xy.shape == (2,1), "Wrong shape of velocity matrix, should be {} but is".format((2,1),v_xy.shape)
     return v_xy
 
 # Will generate the whole optic flow field for a scene size of (X,Y) pixels #can and should be parallelised 
-def get_artificial_optic_flow(f,X,Y,T,Omega):
+def get_artificial_optic_flow(f,time,X,Y,T,Omega):
     assert T.shape == (3,1), "Wrong shape of T matrix, should be {} but is".format((3,1),T.shape)
     assert Omega.shape == (3,1), "Wrong shape of Omega matrix, should be {} but is".format((3,1),Omega.shape)
 
-    O_field = np.zeros((X,Y))
+    v_x = np.zeros((time,X,Y))
+    v_y = np.zeros((time,X,Y))
+    for t in np.arange(0,time,1):
+        for i in np.arange(0,X,1):
+            for j in np.arange(0,Y,1):
+                v_x[t,i,j] = get_point_optic_flow(f,i,j,T,Omega)[0,0]
+                v_y[t,i,j] = get_point_optic_flow(f,i,j,T,Omega)[1,0]
 
-    for i in np.arange(0,X,1):
-        for j in np.arange(0,Y,1):
-            O_field[i,j] = get_point_optic_flow(f,i,j,T,Omega)
+    return v_x, v_y
+
