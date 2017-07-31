@@ -57,3 +57,5 @@ Also, to be looked into - the use of either python pool architecture or into som
 To split an array into many subarrays, one can use the following nice little piece of code, maybe there are other ways to do it though :
 `for x_split in np.array_split(v_x,10,axis=1):
 	for y_split in np.array_split(x_split,10,axis=2):`
+
+Better is to think about and use the indices of the matrix rather than the values directly. Also, on using the paralleization, it helps to use not only for different areas but also for different time steps.
