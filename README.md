@@ -53,3 +53,7 @@ Okay, now we shall use the values of the optic flow generated artificially by me
 So, there is some kind of stochasticity during the calculation of the subspace algorithm. Perhaps, we can look at some of the other ways to look at it? The 2012 paper needs to be looked at in a better way apparently. 
 
 Also, to be looked into - the use of either python pool architecture or into some form of Numba or PyCUDA that can be useful. 
+
+To split an array into many subarrays, one can use the following nice little piece of code, maybe there are other ways to do it though :
+`for x_split in np.array_split(v_x,10,axis=1):
+	for y_split in np.array_split(x_split,10,axis=2):`
