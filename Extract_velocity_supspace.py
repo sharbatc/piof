@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[5]:
 
 
 import numpy as np
@@ -12,8 +12,12 @@ from matplotlib import animation
 
 from optic_flow import *
 
+from multiprocessing import Pool, Manager, Process,TimeoutError
+import time
+import os
 
-# In[ ]:
+
+# In[6]:
 
 
 def get_drifting_sinus(im_size,omega,theta,lambd):
@@ -33,7 +37,7 @@ def get_drifting_sinusoids(im_size,omega,theta,lambd):
     return response
 
 
-# In[ ]:
+# In[7]:
 
 
 get_ipython().magic('matplotlib inline')
@@ -57,7 +61,7 @@ fig.colorbar(im)
 animation.FuncAnimation(fig, animate, frames=stimulus.shape[0], interval=50)
 
 
-# In[ ]:
+# In[8]:
 
 
 # import matlab.engine
@@ -66,7 +70,7 @@ animation.FuncAnimation(fig, animate, frames=stimulus.shape[0], interval=50)
 # stimulus2 = np.array(stimulus2)
 
 
-# In[ ]:
+# In[9]:
 
 
 # vmin2 = stimulus2.min(); vmax2 = stimulus2.max()
@@ -80,18 +84,32 @@ animation.FuncAnimation(fig, animate, frames=stimulus.shape[0], interval=50)
 # animation.FuncAnimation(fig, animate, frames=stimulus2.shape[0], interval=50)
 
 
-# In[64]:
+# %%time
+# # v_x, v_y = optic_flow(stimulus)
+# 
+# T = np.array([[1],[1],[1]])
+# Omega = np.array([[0],[0],[0]])
+# f = 30
+# time = 51
+# x_shape = 71
+# y_shape = 61
+# v_x, v_y = get_artificial_optic_flow(f,time,x_shape,y_shape,T,Omega)
+
+# In[10]:
 
 
-get_ipython().run_cell_magic('time', '', '# v_x, v_y = optic_flow(stimulus)\n\nT = np.array([[1],[1],[1]])\nOmega = np.array([[0],[0],[0]])\nf = 30\ntime = 51\nx_shape = 71\ny_shape = 61\nv_x, v_y = get_artificial_optic_flow(f,time,x_shape,y_shape,T,Omega)')
+get_ipython().run_cell_magic('time', '', '\nv_x, v_y = optic_flow(stimulus)')
 
 
-# In[74]:
+# In[11]:
 
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
 spacing = 2
+time = im_shape[0]
+x_shape = im_shape[1]
+y_shape = im_shape[2]
 im_show = []
 (X, T, Y) = np.meshgrid(np.arange(0, x_shape), np.arange(0, time), np.arange(0, y_shape))
 Q = ax.quiver(X[0,::spacing,::spacing], Y[0,::spacing,::spacing], 
@@ -109,7 +127,7 @@ plt.tight_layout()
 animation.FuncAnimation(fig, animate, frames=T.shape[0], interval=50)
 
 
-# In[66]:
+# In[12]:
 
 
 fig = plt.figure(figsize=(12,4))
@@ -206,7 +224,7 @@ animation.FuncAnimation(fig, animate, frames=T.shape[0], interval=50)
 # where $C^{\bot}(T)$ is an orthogonal complement to $C(T)$. The minimum argument of $T$ which achieves this is taken to be the candidate translation direction. 
 # 
 
-# In[67]:
+# In[4]:
 
 
 def sample_T(): #to get a systematic number of T's (use for ||n later)
@@ -233,18 +251,57 @@ def calculate_perp_CT(sample_points, T): #input the presampled sample points - c
         #calculating B
         B[2*i] = np.array([(x*y)/f, -(f + (x*x)/f), y])
         B[2*i+1] = np.array([f + (y*y)/f, -(x*y)/f, -x])
-    return linalg.orth(np.concatenate((A_T,B),axis=1)) 
+    return linalg.orth(np.concatenate((A_T,B),axis=1))
+
+def calculate_ET(sample_points):
+    N = np.shape(sample_points)[0];
+    search_range = np.arange(0,np.pi,0.01)
+    pool = Pool(CPU_NUMBER)
+    
+    def foo(T):
+        return(calculate_perp_CT(sample_points,T))
+    
+    ET = pool.map(foo,search_range)
+    pool.close()
+    pool.join()
+
+
+# In[3]:
+
+
+
 
 
 # ## Add the saved and parallelised version of the C(T) calculations here and put an estimate of the time and memory needed for the same (TO BE DONE!!)
 
-# In[68]:
+# In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', "stim_time = time\nx_lim = x_shape\ny_lim = y_shape\nN = 10 #number of random points\nf = 30 #focal length\nsearch_range = np.arange(0,np.pi,0.01)\nE = np.zeros((np.size(search_range),np.size(search_range)))\n\nfor time in np.arange(20,21,1): #change to allow for time streaming\n    ## gather some sample points\n    sample_points = np.transpose([np.random.randint(x_lim/2-20,x_lim/2,size=N),np.random.randint(y_lim/2-20,y_lim/2,size=N)])\n    sample_v_x, sample_v_y = v_x[time,sample_points[:,0],sample_points[:,1]], v_y[time,sample_points[:,0],sample_points[:,1]]\n\n    ## run through all candidate translation directions\n    for idtheta,theta in enumerate(list(search_range)):\n        for idphi,phi in enumerate(list(search_range)):\n            x = np.cos(theta)*np.sin(phi)\n            y = np.sin(theta)*np.sin(phi)\n            z = np.cos(phi)\n            T = np.array([[x],[y],[z]])\n            \n            perp_CT = calculate_perp_CT(sample_points, T)\n            v_t = np.vstack((sample_v_x,sample_v_y)).reshape((-1),order='F').reshape(1,2*N) #v is concat of all sample point vels \n            E_T = (np.linalg.norm(np.dot(v_t,perp_CT)))**2\n            E[idtheta,idphi] = E_T        ")
+CPU_NUMBER = os.cpu_count()
+
+pool = Pool(CPU_NUMBER)        
+
+cell_split = np.array_split(np.arange(self.N_cells), CPU_NUMBER)
+
+cross_list = pool.map(calculate, cell_split)
+
+pool.close()
+pool.join()
 
 
-# In[73]:
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', "stim_time = time\nx_lim = x_shape\ny_lim = y_shape\nN = 10 #number of random points\nf = 30 #focal length\nsearch_range = np.arange(0,np.pi,0.01)\nE = np.zeros((np.size(search_range),np.size(search_range)))\n\nfor time in np.arange(0,stim_time,1): \n    ## gather some sample points\n    for x_split in np.arange(x_lim-1,0,-10):\n        for y_split in np.arange(y_lim-1,0,-10):\n            sample_points = np.transpose([np.random.randint(x_split-10,x_split,size=N),np.random.randint(y_split-10,y_split,size=N)])\n            sample_v_x, sample_v_y = v_x[time,sample_points[:,0],sample_points[:,1]], v_y[time,sample_points[:,0],sample_points[:,1]]\n\n            ## run through all candidate translation directions\n            for idtheta,theta in enumerate(list(search_range)):\n                for idphi,phi in enumerate(list(search_range)):\n                    x = np.cos(theta)*np.sin(phi)\n                    y = np.sin(theta)*np.sin(phi)\n                    z = np.cos(phi)\n                    T = np.array([[x],[y],[z]])\n            \n                    perp_CT = calculate_perp_CT(sample_points, T)\n                    v_t = np.vstack((sample_v_x,sample_v_y)).reshape((-1),order='F').reshape(1,2*N) #v is concat of all sample point vels \n                    E_T = (np.linalg.norm(np.dot(v_t,perp_CT)))**2\n                    E[idtheta,idphi] += E_T\n                    \n            theta, phi = np.unravel_index(E.argmin(), E.shape)\n            x_final = np.cos(theta)*np.sin(phi)\n            y_final = np.sin(theta)*np.sin(phi)\n            z_final = np.cos(phi)y\n            T_final = np.array([[x],[y],[z]])\n            print(T)")
+
+
+# In[9]:
+
+
+np.transpose([np.random.randint(60,70,size=N),np.random.randint(50,60,size=N)])
+
+
+# In[10]:
 
 
 #plotting residual surfaces
@@ -270,7 +327,7 @@ print(T)
 # \hat{\Omega} = \Bigg[ \sum_{i}B^{t}_{i}d_{i}d^{t}_{i}B_{i} \Bigg]^{-1} \Bigg[ \sum_{i}B^{t}_{i}d_{i}d^{t}_{i}v_{i} \Bigg]
 # $$
 
-# In[70]:
+# In[11]:
 
 
 #estimating rotation given the translation
@@ -306,7 +363,7 @@ print(omega)
 # ### Estimating the value of the depth given the direction of translation and the rotation
 # From the equation $v(x,y) = p(x,y)A(x,y)T + B(x,y)\Omega$, we can substitute the values of $T$ and $\Omega$ to get the estimated depth at every point of the image
 
-# In[71]:
+# In[12]:
 
 
 #calculating depth
@@ -322,7 +379,7 @@ for x in np.arange(0,x_lim,1):
 depth_mat = np.clip(depth_mat,0,np.mean(depth_mat)+np.std(depth_mat))
 
 
-# In[72]:
+# In[14]:
 
 
 #plotting depth
