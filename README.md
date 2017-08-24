@@ -59,3 +59,5 @@ To split an array into many subarrays, one can use the following nice little pie
 	for y_split in np.array_split(x_split,10,axis=2):`
 
 Better is to think about and use the indices of the matrix rather than the values directly. Also, on using the paralleization, it helps to use not only for different areas but also for different time steps. 	
+
+Pooling helps to get the speed increased, but not by a significant amount.
