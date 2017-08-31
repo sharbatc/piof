@@ -61,3 +61,5 @@ To split an array into many subarrays, one can use the following nice little pie
 Better is to think about and use the indices of the matrix rather than the values directly. Also, on using the paralleization, it helps to use not only for different areas but also for different time steps. 	
 
 Pooling helps to get the speed increased, but not by a significant amount.
+
+Notes for me : Please do check what is the kind of implementation that is being done by the linalg ortho code in the 
