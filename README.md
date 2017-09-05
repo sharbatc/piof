@@ -60,8 +60,12 @@ To split an array into many subarrays, one can use the following nice little pie
 
 Better is to think about and use the indices of the matrix rather than the values directly. Also, on using the parallelization, it helps to use not only for different areas but also for different time steps. 	
 
-Pooling helps to get the speed increased, but not by a significant amount.
+Pooling helps to get the speed increased, but not by a significant amount. (This is seen even later in the use of the code for the different patches to be used for the estimation of the value of the translation direction)
 
 Notes for me : Please do check what is the kind of implementation that is being done by the linalg ortho code in the numpy package for the implementation seems to give different answers if what I have read from the paper is correct. 
 
-The subset method works well and reasonably fast for the most part, even when there is noise, and extracts the direction of translation quite well, maybe we can have a look at other models to validate that the optic flow leading to the path integration indeed is useful. The review by Raudies and Neumann et al show that this is probably one of the best ways to estimate the ego motion from the optic flow values and although the neural substrate is not well defined. The parallel and fast calculation of it, from the Markus Lappe paper might be useful to implement, if I could do it by the end of this week. 
+The subset method works well and reasonably fast for the most part, even when there is noise, and extracts the direction of translation quite well, maybe we can have a look at other models to validate that the optic flow leading to the path integration indeed is useful. The review by Raudies and Neumann et al show that this is probably one of the best ways to estimate the ego motion from the optic flow values and although the neural substrate is not well defined. The parallel and fast calculation of it, from the Markus Lappe paper might be useful to implement.
+
+## Using either of the two methods for calculation
+
+The calculation of SVD decomposition and QR decomposition represent two parallel ways of finding out the direction of translation from the velocity matrices. The calculation of linalg.orth requires the svd decomposition anyways so using the calculation of the orthonormal basis for the nullspace (which again would require the use of either the QR decomposition or the SVD decomposition anyway). So I would suggest using the QR decomposition only once during the entire calculation as that might make the situation faster and more time efficient as well as easy to implement.  
