@@ -1,3 +1,4 @@
+
 # Notebook problems
 If there are problems like iopub limit exceeded, please set the limit manually using
 `jupyter notebook --NotebookApp.iopub_data_rate_limit=10000000`
@@ -69,3 +70,8 @@ The subset method works well and reasonably fast for the most part, even when th
 ## Using either of the two methods for calculation
 
 The calculation of SVD decomposition and QR decomposition represent two parallel ways of finding out the direction of translation from the velocity matrices. The calculation of linalg.orth requires the svd decomposition anyways so using the calculation of the orthonormal basis for the nullspace (which again would require the use of either the QR decomposition or the SVD decomposition anyway). So I would suggest using the QR decomposition only once during the entire calculation as that might make the situation faster and more time efficient as well as easy to implement.  
+
+
+## Beginning of writing for the project report 
+
+This project deals with the estimation of path integration from soleley the optic flow, and how the capabilities of path integration changes with the 
