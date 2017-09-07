@@ -1,9 +1,3 @@
-
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 import scipy.linalg as linalg
 import itertools
@@ -15,42 +9,30 @@ import time
 import os
 
 
-# In[2]:
-
-
-def generate_artificial_flow(size,p,T,omega):
+def generate_artificial_flow(size,depth_matrix,T,omega):
+    """
+        Generates an artificial optic flow motion field with given translation,
+        rotation, and depth matrix. The origin of motion is assumed to be at 
+        the centre of the retinal patch. This is just one optic flow motion field
+        that would be calculated between say, two frames of a video
+    """
     v_x,v_y = np.zeros(size),np.zeros(size);
     for x in range(size[0]):
         for y in range(size[1]):
-            A = np.array([[-f,0,x],[0,-f,y]])
-            B = np.array([[(x*y)/f, -(f + (x*x)/f), y],[f + (y*y)/f, -(x*y)/f, -x]])
-            v_x[x,y],v_y[x,y] = np.dot(A,T)/p[x,y] + np.dot(B,omega)
+            x_scaled = np.int(x/2) #to recentre the focus point
+            y_scaled = np.int(y/2) #if not done, just one quadrant visible
+
+            ### Longuet -Higgins and Prazdny's motion field formulation begins
+
+            A = np.array([[-f,0,x_scaled],[0,-f,y_scaled]])
+            B = np.array([[(x_scaled*y_scaled)/f, -(f + (x_scaled*x_scaled)/f),y],\
+                [f + (y_scaled*y_scaled)/f, -(x_scaled*y_scaled)/f, -x_scaled]])
+            v_x[x,y],v_y[x,y] = np.dot(A,T)/depth_matrix[x,y] + np.dot(B,omega)
+
+            ### Longuet-Higgins and Prazdny's motion field formulation ends
     return v_x, v_y
-    
 
 
-# In[3]:
-
-
-# insert a random depth-wise image that might be useful for judging the depth perception
-size = (100,100)
-p = np.zeros(size) + 45
-p[:,30:40] = p[:,80:90] = 15
-p[45:55,45:55] = 30
-p[26:39,56:69] = 40
-p[53:76,53:76] = 20
-T = np.array([[0],[1],[0]])
-omega = np.array([[0],[0],[0]])
-f = 15
-
-v_x,v_y = generate_artificial_flow(size,p,T,omega)
-
-
-# In[4]:
-
-
-#show the depth wise image
-get_ipython().magic('matplotlib inline')
 fig = plt.figure('Depth figure')
 ax = fig.add_subplot(1,1,1)
 ax.set_xlabel('X')
@@ -103,22 +85,19 @@ im_patches = im_patches[:,:,1:]
 # In[20]:
 
 
-#delegating all of these to a file might be helpful
-
-#don't need the following - clean when needed
-def calculate_q(sample_points, omega, p):
-    depths = np.transpose([p[sample_points[:,0],sample_points[:,1]]])
-    inv_depths = 1/depths
-    return np.vstack((inv_depths,omega))
-
-
-def calculate_CT(sample_points, T): #input the presampled points
+def calculate_CT(sample_points, T): 
+    """
+        As defined by Heeger and Jepson, represents a matrix collecting the 
+        perspective projections for all the different sample points
+    """
     N = np.shape(sample_points)[0]; #justincase
-    A_T = np.zeros([2*N,N]) #preallocate ndarrays for storing the matrices
+    A_T = np.zeros([2*N,N]) # preallocate ndarrays for storing the matrices
     B = np.zeros([2*N,3])
     
     for i in np.arange(0,N,1):
         x,y = sample_points[i,0],sample_points[i,1]
+        x_scaled = x - (size[0]/2)
+        y_scaled = y - (size[1]/2)
         
         #calculating A_T
         A = np.array([[-f,0,x],[0,-f,y]])
@@ -132,6 +111,11 @@ def calculate_CT(sample_points, T): #input the presampled points
     return np.concatenate((A_T,B),axis=1)
 
 def calculate_projected_CT(sample_points,T):
+    """
+        Orthogonal complement would have required one more calculation in 
+        calculating the null space so the projection is better to use as we
+        are using the QR decomposition anyway.
+    """
     N = np.shape(sample_points)[0]; #justincase
     CT = calculate_CT(sample_points,T)
     CTbar, r = np.linalg.qr(CT)
@@ -140,11 +124,14 @@ def calculate_projected_CT(sample_points,T):
     return (I - cc)
 
 def calculate_v(sample_points):
+    """
+        These would change with incoming optic flow motion fields
+    """
     sample_v_x, sample_v_y = v_x[sample_points[:,0],sample_points[:,1]], v_y[sample_points[:,0],sample_points[:,1]]
     v = np.vstack((sample_v_x,sample_v_y)).reshape((-1),order='F').reshape(2*N,1)
     return v
 
-def calculate_CT_parallel_inner(params):
+def calculate_CT_parallel(params):
     idtheta, idphi,patch_id = params[0],params[1],params[2]
     theta,phi = idtheta/100,idphi/100
     x = np.cos(theta)*np.sin(phi)
