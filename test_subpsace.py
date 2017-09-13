@@ -8,7 +8,22 @@ from multiprocessing import Pool, Manager, Process,TimeoutError
 import time
 import os
 
+def get_drifting_sinus(im_size,omega,theta,lambd):
+    im_centre = (np.array(im_size[1:])/2).astype(int)
+    x,t,y = np.meshgrid(np.arange(0,im_size[1]), np.arange(0,im_size[0]), np.arange(0,im_size[2]))
+    k = 2*np.pi/lambd
+    return  np.cos(k*(np.cos(theta)*(x-im_centre[0]) + np.sin(theta)*(y-im_centre[1])-omega*t))  
 
+def get_drifting_sinusoids(im_size,omega,theta,lambd):
+    x,t,y = np.meshgrid(np.arange(0,im_size[1]), np.arange(0,im_size[0]), np.arange(0,im_size[2]))
+    response = np.zeros(im_size)
+    
+    for om, thet, lambd_ in zip(omega, theta, lambd):
+        
+        response += get_drifting_sinus(im_size, om, thet, lambd_)
+    response /= len(omega)
+    return response
+    
 def generate_artificial_flow(size,depth_matrix,T,omega):
     """
         Generates an artificial optic flow motion field with given translation,
@@ -39,22 +54,22 @@ def calculate_CT(sample_points, T):
         perspective projections for all the different sample points
     """
     N = np.shape(sample_points)[0]; #justincase
-    A_T = np.zeros([2*N,N]) # preallocate ndarrays for storing the matrices
+    A_T = np.zeros([2*N,N]) #preallocate ndarrays for storing the matrices
     B = np.zeros([2*N,3])
     
     for i in np.arange(0,N,1):
         x,y = sample_points[i,0],sample_points[i,1]
-        x_scaled = x - (size[0]/2)
-        y_scaled = y - (size[1]/2)
+        xscaled = x - np.int(size[0]/2)
+        yscaled = y - np.int(size[0]/2)
         
         #calculating A_T
-        A = np.array([[-f,0,x],[0,-f,y]])
+        A = np.array([[-f,0,xscaled],[0,-f,yscaled]])
         AtimesT = np.dot(A,T)
         A_T[2*i,i], A_T[2*i+1,i] = AtimesT[0], AtimesT[1]
         
         #calculating B
-        B[2*i] = np.array([(x*y)/f, -(f + (x*x)/f), y])
-        B[2*i+1] = np.array([f + (y*y)/f, -(x*y)/f, -x])
+        B[2*i] = np.array([(xscaled*yscaled)/f, -(f + (xscaled*xscaled)/f), yscaled])
+        B[2*i+1] = np.array([f + (yscaled*yscaled)/f, -(xscaled*yscaled)/f, -xscaled])
     
     return np.concatenate((A_T,B),axis=1)
 
@@ -71,16 +86,17 @@ def calculate_projected_CT(sample_points,T):
     cc = np.dot(CTbar,np.transpose(CTbar))
     return (I - cc)
 
+
 def calculate_v(sample_points):
     """
         These would change with incoming optic flow motion fields
     """
-    sample_v_x, sample_v_y = v_x[sample_points[:,0],sample_points[:,1]], \
-                            v_y[sample_points[:,0],sample_points[:,1]]
+    sample_v_x, sample_v_y = video_v_x[time_id,sample_points[:,0],sample_points[:,1]],\
+                             video_v_y[time_id,sample_points[:,0],sample_points[:,1]]
     v = np.vstack((sample_v_x,sample_v_y)).reshape((-1),order='F').reshape(2*N,1)
     return v
 
-def calculate_CT_parallel(params):
+def calculate_CT_parallel_inner(params):
     idtheta, idphi,patch_id = params[0],params[1],params[2]
     theta,phi = idtheta/100,idphi/100
     x = np.cos(theta)*np.sin(phi)
@@ -92,16 +108,15 @@ def calculate_CT_parallel(params):
     np.save('ct_estimate/ct_estimate_patchid{}_idtheta{}_idphi{}.npy'\
         .format(patch_id,idtheta,idphi),projected_CT)
 
+def calculate_E(params): #tentative, check use of sample_points, T or using patch_no, phi, theta
+    idtheta, idphi, patch_id, time_id = params[0],params[1],params[2],params[3]    
+    sample_points = im_patches[:,:,patch_id]
+    projected_CT = np.load('ct_estimate/ct_estimate_patchid{}_idtheta{}_idphi{}.npy'.format(patch_id,idtheta,idphi))
+    v = calculate_v(sample_points,time_id)
+    E_T = (np.linalg.norm(np.dot(projected_CT,v)))**2
+    return (patch_id,idtheta,idphi,E_T)
     
 ## if time permits, try double optimisations, but remember that daemonic processes
 ## cannnot have children
 ## that was called calculate_CT_parallel_outer, and hence the moniker inner above
 
-def calculate_E(params): #tentative, check use of sample_points
-    idtheta, idphi, patch_id = params[0],params[1],params[2]    
-    sample_points = im_patches[:,:,patch_id]
-    projected_CT = np.load('ct_estimate/ct_estimate_patchid{}_idtheta{}_idphi{}.npy'\
-        .format(patch_id,idtheta,idphi))
-    v = calculate_v(sample_points)
-    E_T = (np.linalg.norm(np.dot(projected_CT,v)))**2
-    return (patch_id,idtheta,idphi,E_T)
